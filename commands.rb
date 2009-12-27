@@ -26,13 +26,20 @@ class ShowCommand < Command
 	end
 	
 	def run args
-		arg = args[0]
-		if ![nil, "all", "done", "marked"].include? arg then
-			puts "invalid argument"
-			return
+		done = false
+		marked = false
+		all = false
+		args.each do |arg|
+			if arg == "done" then done = true
+			elsif arg == "marked" then marked = true
+			elsif arg == "all" then all = true
+			else
+				puts "Invalid option #{arg}"
+				return
+			end
 		end
 		@tasks.each do |task|
-			if((!arg && !task.done)|| arg == "all" || (arg == "done" && task.done) || (arg == "marked" && task.mark)) then
+			if all || (marked && task.mark) || (done && task.done) || (!all && !marked && !done && !task.done) then
 				task.show
 			end
 		end
@@ -47,10 +54,9 @@ class DoneCommand < Command
 	
 	def run args
 		id = args[0].to_i
-		@tasks.each do |task|
-			if task.id == id
-				task.done = true
-			end
+		task = @tasks.find_id id
+		if !task then puts "No task id #{id} found"
+		else task.done = true
 		end
 	end
 end
@@ -68,6 +74,17 @@ class MarkCommand < Command
 				task.mark = true
 			end
 		end
+	end
+end
+
+class SortCommand < Command
+	attr_accessor :tasks
+	def initialize
+		@description = "Sort tasks with filter"
+	end
+	
+	def run args
+		@tasks.sort!.reverse! {|a, b| a <=> b}
 	end
 end
 
@@ -96,6 +113,7 @@ class HelpCommand < Command
 			puts "* show [all, done, marked]"
 			puts "* done [id] - mark task as done"
 			puts "* mark [id] - mark task"
+			puts "* sort [filter] - sort all tasks"
 			puts "* help [option] for details"
 		elsif args.size > 1
 			puts "Wrong number of arguments"

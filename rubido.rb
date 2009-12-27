@@ -19,6 +19,8 @@ class Rubido
 		@commands["done"].tasks = @tasks
 		@commands["mark"] = MarkCommand.new
 		@commands["mark"].tasks = @tasks
+		@commands["sort"] = SortCommand.new
+		@commands["sort"].tasks = @tasks
 		@commands["reset"] = ResetCommand.new
 		@commands["reset"].tasks = @tasks
 		@commands["quit"] = ExitCommand.new
@@ -39,7 +41,7 @@ class Rubido
 	
 	def start
 		puts "Rubido - commandline task manager"
-		@commands["show"].run ["all"]
+		@commands["show"].run []
 		print ": "
 		while line = gets.chop do
 			parse line
@@ -124,6 +126,15 @@ class TaskList < Array
 	def add_task task
 		task.id = get_id
 		self << task
+	end
+	
+	def find_id id
+		self.each do |task|
+			if task.id == id
+				return task
+			end
+		end
+		return nil
 	end
 end
 
