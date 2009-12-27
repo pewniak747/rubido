@@ -9,7 +9,7 @@ require 'commands.rb'
 class Rubido
 	def initialize
 		@version = 0
-		@tasks = TaskList.new
+		load_file
 		@commands = {}
 		@commands["add"] = AddCommand.new
 		@commands["add"].tasks = @tasks
@@ -42,7 +42,21 @@ class Rubido
 		while line = gets.chop do
 			parse line
 			print ": "
+			save_file
 		end
+	end
+	
+	def save_file
+		File.open("data.yml","w") do |file|
+			YAML.dump(@tasks, file)
+		end
+	end
+	
+	def load_file
+		File.open("data.yml","r") do |file|
+			@tasks = YAML.load(file)
+		end
+		@tasks = TaskList.new if !@tasks
 	end
 end
 
@@ -56,7 +70,7 @@ class Task
 	end
 	
 	def show
-		print "#{self.id} #{self.created_at}\t#{self.name}\n"
+		print "#{self.id} #{self.created_at.hour}:#{self.created_at.min} #{self.created_at.day}.#{self.created_at.month} #{self.created_at.year}\t#{self.name}\n"
 	end
 end
 
