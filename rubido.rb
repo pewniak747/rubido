@@ -21,12 +21,13 @@ class Rubido
 		@commands["mark"].tasks = @tasks
 		@commands["reset"] = ResetCommand.new
 		@commands["reset"].tasks = @tasks
-		@commands["exit"] = ExitCommand.new
+		@commands["quit"] = ExitCommand.new
 		@commands["help"] = HelpCommand.new
+		@commands["help"].tasks = @tasks
 	end
 
 	def parse input
-		args = input.split
+		args = split input
 		command = args.first
 		args.delete_at 0
 		run_command = @commands[command]
@@ -38,6 +39,7 @@ class Rubido
 	
 	def start
 		puts "Rubido - commandline task manager"
+		@commands["show"].run ["all"]
 		print ": "
 		while line = gets.chop do
 			parse line
@@ -57,11 +59,33 @@ class Rubido
 			@tasks = YAML.load(file)
 		end
 		@tasks = TaskList.new if !@tasks
+		@tasks.version = @version
+	end
+	
+	def split input
+		args = []
+		temp = ""
+		opened = false
+		input.each_char do |char|
+			if char == '"' then opened = !opened
+			elsif char =~ /\s/ && opened then
+				temp += char
+			elsif char =~ /\s/ && !opened then
+				args << temp
+				temp = ""
+			else
+				temp.concat char
+			end
+		end
+		args << temp if !temp.empty?
+		return args
 	end
 end
 
 class Task
 	attr_accessor :name, :id, :created_at, :done, :mark
+	include Comparable
+	
 	def initialize
 		@name = ""
 		@done = false
@@ -72,9 +96,14 @@ class Task
 	def show
 		print "#{self.id} #{self.created_at.hour}:#{self.created_at.min} #{self.created_at.day}.#{self.created_at.month} #{self.created_at.year}\t#{self.name}\n"
 	end
+	
+	def <=> other
+		self.created_at <=> other.created_at
+	end
 end
 
 class TaskList < Array
+	attr_accessor :version
 	def initialize
 		@id_counter = 0
 	end

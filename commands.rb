@@ -83,18 +83,30 @@ class ResetCommand < Command
 end
 
 class HelpCommand < Command
+	attr_accessor :tasks
 	def initialize
 		@description = "Displays help"
 	end
 	
 	def run args
-		puts "Rubido - commandline task manager"
-		puts "version #{@version}"
-		puts "add [task description]"
-		puts "show [all, done, marked]"
-		puts "done [id] - mark task as done"
-		puts "mark [id] - mark task"
-		puts "help [option] for details"
+		if !args[0]
+			puts "Rubido - commandline task manager"
+			puts "version #{@tasks.version}"
+			puts "* add [task description]"
+			puts "* show [all, done, marked]"
+			puts "* done [id] - mark task as done"
+			puts "* mark [id] - mark task"
+			puts "* help [option] for details"
+		elsif args.size > 1
+			puts "Wrong number of arguments"
+		elsif args[0] == "add"
+			puts "add command - add new task to list"
+			puts "usage: add [options] [task description]"
+			puts "options:"
+			puts "* option1"
+		else
+			puts "Unknown command '#{args[0]}'."
+		end
 	end
 end
 
