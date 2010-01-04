@@ -39,7 +39,7 @@ class ShowCommand < Command
 			end
 		end
 		@tasks.each do |task|
-			if all || (marked && task.mark) || (done && task.done) || (!all && !marked && !done && !task.done) then
+			if task.filter(all, done, marked) == true then
 				task.show
 			end
 		end
@@ -99,6 +99,54 @@ class ResetCommand < Command
 	end
 end
 
+class ExportCommand < Command
+	attr_accessor :tasks, :format, :all, :done, :marked
+	def initialize
+		@description = "Exports task list"
+	end
+	
+	def run args
+		done = false
+		marked = false
+		all = false
+		args.each do |arg|
+			if arg == "done" then @done = true
+			elsif arg == "marked" then @marked = true
+			elsif arg == "all" then @all = true
+			else
+				puts "Invalid option #{arg}"
+				return
+			end
+		end
+		export_html
+	end
+	
+	def export_html
+		file = File.new("./export.html", "w")
+		file.puts "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\""
+		file.puts "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
+		file.puts "<head>"
+		file.puts "<meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\" />"
+		file.puts "</head>"
+		file.puts "<html>"
+		file.puts "<h1>Rubido task list</h1>"
+		file.puts "<ul>"
+		@tasks.each do |task|
+			if task.filter(@all, @done, @marked) == true then
+				file.puts "<li>"
+				file.puts "#{task.id} #{task.created_at.hour}:#{task.created_at.min} #{task.created_at.day}.#{task.created_at.month} #{task.created_at.year}\t#{task.name}"
+				file.puts "</li>"
+			end
+		end
+		file.puts "</ul>"
+		file.puts "</html>"
+		
+		file.close
+		puts "Exported to 'export.html'"
+	end
+end
+
+
 class HelpCommand < Command
 	attr_accessor :tasks
 	def initialize
@@ -109,11 +157,13 @@ class HelpCommand < Command
 		if !args[0]
 			puts "Rubido - commandline task manager"
 			puts "version #{@tasks.version}"
+			puts "	[format] can be all, done, marked"
 			puts "* add [task description]"
-			puts "* show [all, done, marked]"
+			puts "* show [filter]"
 			puts "* done [id] - mark task as done"
 			puts "* mark [id] - mark task"
 			puts "* sort [filter] - sort all tasks"
+			puts "* export [filter] [format] - export task list to export.format"
 			puts "* help [option] for details"
 		elsif args.size > 1
 			puts "Wrong number of arguments"

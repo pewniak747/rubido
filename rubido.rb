@@ -1,3 +1,4 @@
+#!/usr/bin/ruby
 # rubido - cmmandline task manager
 # by Tomasz 'pewniak747' Pewiński
 # pewniak747@gmail.com
@@ -21,9 +22,12 @@ class Rubido
 		@commands["mark"].tasks = @tasks
 		@commands["sort"] = SortCommand.new
 		@commands["sort"].tasks = @tasks
+		@commands["export"] = ExportCommand.new
+		@commands["export"].tasks = @tasks
 		@commands["reset"] = ResetCommand.new
 		@commands["reset"].tasks = @tasks
 		@commands["quit"] = ExitCommand.new
+		@commands["exit"] = ExitCommand.new
 		@commands["help"] = HelpCommand.new
 		@commands["help"].tasks = @tasks
 	end
@@ -33,7 +37,7 @@ class Rubido
 		command = args.first
 		args.delete_at 0
 		run_command = @commands[command]
-		if !run_command then puts "unknown command'#{command}'"
+		if !run_command then puts "unknown command '#{command}'"
 		else 
 			run_command.run args
 		end
@@ -93,6 +97,13 @@ class Task
 		@done = false
 		@mark = false
 		@created_at = Time.now
+	end
+	
+	def filter all, done, marked
+		if all || (marked && self.mark) || (done && self.done) || (!all && !marked && !done && !self.done) then
+			return true
+		else return false
+		end
 	end
 	
 	def show
