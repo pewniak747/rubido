@@ -24,6 +24,8 @@ class Rubido
 		@commands["sort"].tasks = @tasks
 		@commands["export"] = ExportCommand.new
 		@commands["export"].tasks = @tasks
+		@commands["clear"] = ClearCommand.new
+		@commands["clear"].tasks = @tasks
 		@commands["reset"] = ResetCommand.new
 		@commands["reset"].tasks = @tasks
 		@commands["quit"] = ExitCommand.new
@@ -37,15 +39,18 @@ class Rubido
 		command = args.first
 		args.delete_at 0
 		run_command = @commands[command]
+		print_line
 		if !run_command then puts "unknown command '#{command}'"
 		else 
 			run_command.run args
 		end
+		print_line
 	end
 	
 	def start
 		puts "Rubido - commandline task manager"
-		@commands["show"].run []
+		puts "Type 'help' for usage information"
+		#@commands["show"].run []
 		print ": "
 		while line = gets.chop do
 			parse line
@@ -55,13 +60,13 @@ class Rubido
 	end
 	
 	def save_file
-		File.open("data.yml","w") do |file|
+		File.open("#{ENV['HOME']}/.rubido.yml","w") do |file|
 			YAML.dump(@tasks, file)
 		end
 	end
 	
 	def load_file
-		File.open("data.yml","r") do |file|
+		File.open("#{ENV['HOME']}/.rubido.yml","r") do |file|
 			@tasks = YAML.load(file)
 		end
 		@tasks = TaskList.new if !@tasks
@@ -86,6 +91,11 @@ class Rubido
 		args << temp if !temp.empty?
 		return args
 	end
+	
+	def print_line
+		80.times { print '-' }
+		puts
+	end
 end
 
 class Task
@@ -107,7 +117,7 @@ class Task
 	end
 	
 	def show
-		print "#{self.id} #{self.created_at.hour}:#{self.created_at.min} #{self.created_at.day}.#{self.created_at.month} #{self.created_at.year}\t#{self.name}\n"
+		return "#{self.id} #{self.created_at.hour}:#{self.created_at.min} #{self.created_at.day}.#{self.created_at.month} #{self.created_at.year}\t#{self.name}\n"
 	end
 	
 	def <=> other

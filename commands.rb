@@ -1,28 +1,32 @@
 class Command
 	attr_accessor :description
-	def to_s
-		return @description
-	end
 end
 
 class AddCommand < Command
 	attr_accessor :tasks
 	def initialize 
-		@description = "Adds new task"
+		@description = "add [description] - adds new task"
+	end
+	
+	def success arg
+		return "Added #{arg}"
 	end
 	
 	def run args
 		task = Task.new
 		task.name = args.join
-		@tasks.add_task task
-		puts "Added #{task.name}"
+		if !task.name.empty? then
+			@tasks.add_task task
+			puts success( task.name )
+		else puts "No description specified!"
+		end
 	end
 end
 
 class ShowCommand < Command
 	attr_accessor :tasks
 	def initialize
-		@description = "Show tasks"
+		@description = "show [filter] - show tasks"
 	end
 	
 	def run args
@@ -40,7 +44,7 @@ class ShowCommand < Command
 		end
 		@tasks.each do |task|
 			if task.filter(all, done, marked) == true then
-				task.show
+				puts task.show
 			end
 		end
 	end
@@ -49,14 +53,20 @@ end
 class DoneCommand < Command
 	attr_accessor :tasks
 	def initialize
-		@description = "Mark task as done"
+		@description = "done [id] - mark task as done"
+	end
+		
+	def success arg
+		return "Task #{arg} done"
 	end
 	
 	def run args
 		id = args[0].to_i
 		task = @tasks.find_id id
 		if !task then puts "No task id #{id} found"
-		else task.done = true
+		else 
+			task.done = true
+			puts success( id )
 		end
 	end
 end
@@ -64,15 +74,20 @@ end
 class MarkCommand < Command
 	attr_accessor :tasks
 	def initialize
-		@description = "Mark task"
+		@description = "mark [id] - mark task"
+	end
+	
+	def success arg
+		return "Task #{arg} marked"
 	end
 	
 	def run args
 		id = args[0].to_i
-		@tasks.each do |task|
-			if task.id == id
-				task.mark = true
-			end
+		task = @tasks.find_id id
+		if !task then puts "No task id #{id} found"
+		else 
+			task.mark = true
+			puts success( id )
 		end
 	end
 end
@@ -80,29 +95,75 @@ end
 class SortCommand < Command
 	attr_accessor :tasks
 	def initialize
-		@description = "Sort tasks with filter"
+		@description = "sort - sort tasks with filter"
+	end
+	
+	def success
+		return "Task list sorted"
 	end
 	
 	def run args
 		@tasks.sort!.reverse! {|a, b| a <=> b}
+		print success
 	end
 end
 
 class ResetCommand < Command
 	attr_accessor :tasks
 	def initialize
-		@description = "Reset task list"
+		@description = "reset - reset task list"
+	end
+	
+	def success
+		return "Task list resetted"
 	end
 	
 	def run args
 		@tasks.clear
+		puts success
+	end
+end
+
+class ClearCommand < Command
+	attr_accessor :tasks
+	def initialize
+		@description = "clear [filter] - removes all filtered tasks"
+	end
+	
+	def success
+		return "Task list cleared"
+	end
+	
+	def run args
+		done = false
+		marked = false
+		all = false
+		args.each do |arg|
+			if arg == "done" then done = true
+			elsif arg == "marked" then marked = true
+			elsif arg == "all" then all = true
+			else
+				puts "Invalid option #{arg}"
+				return
+			end
+		end
+		@tasks.each do |task|
+			if all || (marked && task.mark) || (done && task.done) || (!all && !marked && !done && task.done) then
+				@tasks.delete(task)
+				puts success
+			end
+		end
 	end
 end
 
 class ExportCommand < Command
 	attr_accessor :tasks, :format, :all, :done, :marked
 	def initialize
-		@description = "Exports task list"
+		@description = "export [filter] [format] - exports task list"
+	end
+	
+	def success
+		return "Task list exported"
 	end
 	
 	def run args
@@ -119,6 +180,7 @@ class ExportCommand < Command
 			end
 		end
 		export_html
+		puts success
 	end
 	
 	def export_html
@@ -134,7 +196,7 @@ class ExportCommand < Command
 		@tasks.each do |task|
 			if task.filter(@all, @done, @marked) == true then
 				file.puts "<li>"
-				file.puts "#{task.id} #{task.created_at.hour}:#{task.created_at.min} #{task.created_at.day}.#{task.created_at.month} #{task.created_at.year}\t#{task.name}"
+				file.puts task.show
 				file.puts "</li>"
 			end
 		end
@@ -150,25 +212,27 @@ end
 class HelpCommand < Command
 	attr_accessor :tasks
 	def initialize
-		@description = "Displays help"
+		@description = "help [command] - displays help"
 	end
 	
 	def run args
 		if !args[0]
 			puts "Rubido - commandline task manager"
 			puts "version #{@tasks.version}"
-			puts "	[format] can be all, done, marked"
-			puts "* add [task description]"
-			puts "* show [filter]"
-			puts "* done [id] - mark task as done"
-			puts "* mark [id] - mark task"
-			puts "* sort [filter] - sort all tasks"
-			puts "* export [filter] [format] - export task list to export.format"
-			puts "* help [option] for details"
+			puts "[format] can be all, done, marked"
+			puts "* "+AddCommand.new.description
+			puts "* "+ShowCommand.new.description
+			puts "* "+DoneCommand.new.description
+			puts "* "+MarkCommand.new.description
+			puts "* "+ClearCommand.new.description
+			puts "* "+ResetCommand.new.description
+			puts "* "+SortCommand.new.description
+			puts "* "+ExportCommand.new.description
+			puts "* "+HelpCommand.new.description
 		elsif args.size > 1
 			puts "Wrong number of arguments"
 		elsif args[0] == "add"
-			puts "add command - add new task to list"
+			puts AddCommand.new.to_s
 			puts "usage: add [options] [task description]"
 			puts "options:"
 			puts "* option1"
@@ -180,7 +244,7 @@ end
 
 class ExitCommand < Command
 	def initialize
-		@description = "Exit rubido"
+		@description = "exit, quit - exit rubido"
 	end
 	
 	def run args
